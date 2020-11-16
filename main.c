@@ -21,7 +21,7 @@ uint8_t animation_array[FRAMES][NUM_LEDS] =
 uint8_t * current_frame = animation_array[0]; // pointer to the current frame
 
 // Global tick counter											
-uint32_t tick_counter = 0;
+
 uint32_t led_counter[NUM_LEDS] = {0,0,0,0,0,0,0,0};
 
 /**
@@ -30,9 +30,6 @@ uint32_t led_counter[NUM_LEDS] = {0,0,0,0,0,0,0,0};
  * the value of the pwm is read from the current_frame form the animation
  */
 void led_func(int32_t argc, int32_t argv[]) {
-
-
-	
 
 	if (argc > 0) {
 
@@ -104,20 +101,8 @@ int main(void)
 		if (tick_counter == 4000) destroy(1);
 		
 		// task schedule
-		for(int  i = 0; i < NPROCS; i++) {
-			if (processTable[i].pid > 0) { // only run valid tasks
+		schedule();
 
-				if ( processTable[i].intervall == 0) { // idle task
-					processTable[i].func(processTable[i].argc, processTable[i].argv); // run with arguments
-				}
-				else if (processTable[i].last_tick + processTable[i].intervall <= tick_counter )
-				{
-					processTable[i].func(processTable[i].argc, processTable[i].argv); // run with arguments
-					processTable[i].last_tick  = tick_counter;
-				}
-
-			}
-		}
 		delayms(1);   // Basis Tackt / Delay
 	}
 }

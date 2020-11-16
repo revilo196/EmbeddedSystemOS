@@ -451,6 +451,36 @@
               <FileType>2</FileType>
               <FilePath>.\delay.s</FilePath>
             </File>
+            <File>
+              <FileName>ebsy_os.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\ebsy_os.c</FilePath>
+            </File>
+            <File>
+              <FileName>ebsy_os.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\ebsy_os.h</FilePath>
+            </File>
+            <File>
+              <FileName>ebsy_os.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\ebsy_os.s</FilePath>
+            </File>
+            <File>
+              <FileName>gpio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\gpio.h</FilePath>
+            </File>
+            <File>
+              <FileName>iocon.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\iocon.h</FilePath>
+            </File>
+            <File>
+              <FileName>delay.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\delay.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

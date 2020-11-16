@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+extern uint32_t tick_counter;
 
 typedef enum pstat_enum {
     READY,
@@ -22,7 +23,7 @@ typedef struct pcb_s
 	uint32_t last_tick;
 	uint16_t intervall;
 	void (*func)(int32_t argc, int32_t argv[]);
-	uint32_t * stackp;
+	uintptr_t  stackp;
 	pstat_type state; 
 } task_type;
 
@@ -39,6 +40,9 @@ void destroy(pid_t pid);
 void yield(void);
 
 
-void switchContext( /** some importent arguments from what to what**/);
+void schedule(void);
+
+
+void switchContext(uintptr_t * old_stack, uintptr_t * new_stack);
 
 #endif // MACRO
