@@ -23,7 +23,7 @@ typedef struct pcb_s
 	uint32_t last_tick;
 	uint16_t intervall;
 	void (*func)(int32_t argc, int32_t argv[]);
-	uintptr_t  stackp;
+	uintptr_t * stackp;
 	pstat_type state; 
 } task_type;
 
@@ -43,6 +43,13 @@ void yield(void);
 void schedule(void);
 
 
-void switchContext(uintptr_t * old_stack, uintptr_t * new_stack);
+void switchContext(uintptr_t ** old_stack, uintptr_t ** new_stack);
+
+
+void start(void);
+
+
+void firstContext(uintptr_t * new_stack);
+
 
 #endif // MACRO

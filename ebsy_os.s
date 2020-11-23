@@ -35,16 +35,37 @@
 switchContext FUNCTION  ; start of function 
 
     EXPORT switchContext 
+	;alten Kontext Sichern
+	PUSH { r1,r0,lr }
+	PUSH { r4-r7 }
+	PUSH { r8-r12 }  
 	
-    PUSH {R5,R6,R7,R8,R9,R10,R11,R12,LR} ; store registers to old stack
-	
-	; ALTEN STACKPOINTER SPEICHERN
+	; ALTEN STACKPOINTER im PCB SPEICHERN
 	STR SP, [R0,#0x00] ;r0 addresse zu altem stackpointer
 	
-	LDR SP, R1  ;swap stackpointer R1(ADRESSE ZU NEUEN STACKPOINTER)
+	LDR SP, [R1,#0x00]  ;swap stackpointer R1(ADRESSE ZU NEUEN STACKPOINTER im PCB)
 
-    POP {R5,R6,R7,R8,R9,R10,R11,R12,LR}  ; load register from new stack
+   	; hole den neuen Kontext
+	; vomneuen Stack 
+	pop { r8-r12 }      
+	pop { r4-r7 }
+	pop { r1,r0,lr }  ;!! R1 und R0 halten argumente zum start eines neuen Task's
+	
     BX  LR
 
-ENDFUNC  ; end of function
-END
+	ENDFUNC  ; end of function
+
+	
+firstContext FUNCTION 
+	EXPORT firstContext
+		
+	mov sp, r0
+	; hole den neuen Kontext
+	; vom neuen Stack 
+	pop { r8-r12 }      
+	pop { r4-r7 }
+	pop { r1,r0,pc } ;!! R1 und R0 halten argumente zum start eines neuen Task's
+	
+	ENDFUNC  ; end of function
+	
+	END

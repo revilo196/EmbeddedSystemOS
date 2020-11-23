@@ -52,6 +52,8 @@ Mkfile.old
 dkms.conf
 
 
-*.uvgui
+*.uvgui*
 Objects/
 Listings/
+RTE/
+DebugConfig/

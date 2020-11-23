@@ -4,12 +4,13 @@
 	Process Table and stack
 */
 #define NPROCS 9
-#define STACK_SIZE 256
+#define STACK_SIZE 64
 task_type processTable[NPROCS]; 
 uint32_t stack[NPROCS][STACK_SIZE];
 pid_t current_pid;
 
 uint32_t tick_counter = 0;
+
 
 void HardFault_Handler(void)
 {
@@ -18,6 +19,7 @@ void HardFault_Handler(void)
         //NOP
     }
 } 
+
 /*
 	clear Process Table
 	pid 0 is reserved to represent emtpy space in the processTable
@@ -28,6 +30,17 @@ void init_proc_table(void) {
 		processTable[i].func = 0;
 	}
 }
+
+// lookup task by its pid 
+// important pid != index in procTable (if a task destroid and recreated pid's always increment)
+task_type * task_from_pid(pid_t pid) {
+		for(int  i = 0; i < NPROCS; i++) {
+			if(processTable[i].pid == pid) {
+				return & processTable[i];
+			}
+		}
+		return 0;
+} 
 
 
 /**
@@ -51,11 +64,21 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 			processTable[i].intervall = intervall;
 			processTable[i].argc = argc;
 			processTable[i].argv = argv;
+			processTable[i].stackp = &stack[i][255];
+			processTable[i].stackp = processTable[i].stackp - 3;  //decremnet stackpointer to fit Function and arguments
+			
+			processTable[i].stackp[0] = (uintptr_t)argc; //fill stack with initial values
+			processTable[i].stackp[1] = (uintptr_t)argv;
+			processTable[i].stackp[2] = (uintptr_t)func;
+			
+		  processTable[i].stackp = processTable[i].stackp - 9;  //decremnet sp more
+			
+			processTable[i].state = READY;
 			return pid_counter;
 		}
 	}
 	
-	return -1;
+	return 0;
 }
 
 /**
@@ -66,27 +89,17 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
  * @param pid the pid of the process to remove
  */
 void destroy(pid_t pid) {
-	for(int  i = 0; i < NPROCS; i++) {
-		if(processTable[i].pid == pid) {
-			processTable[i].pid = 0;
-			processTable[i].func = 0;
-			return;
+		task_type *  pcb = task_from_pid(current_pid);
+		if (pcb != 0) {
+			pcb->pid = 0;
+			pcb->func = 0;
 		}
-	}
+		return;
 }
 
 
 
-task_type * task_from_pid(pid_t pid) {
-		for(int  i = 0; i < NPROCS; i++) {
-			if(processTable[i].pid == pid) {
-				return & processTable[i];
-			}
-		}
-		return 0;
-} 
-
-
+// find the current pcb
 task_type * current_proc() {
 	return task_from_pid(current_pid);
 }
@@ -117,12 +130,13 @@ void yield(void) {
 		update des proc-status 
 		und proc-tabelle
 		
-		nächsten wartenden proc aufrufen
+		nï¿½chsten wartenden proc aufrufen
 		
 		switch context
 	*/
 	
-	 for(int  i = 0; i < NPROCS; i++) {
+	//update waiting tasks from the tick counter
+	for(int  i = 0; i < NPROCS; i++) {
 		 // check all waiting proc for changes
 		 if(processTable[i].pid  > 0 && processTable[i].state == WAINTING) {
 			 if (processTable[i].last_tick + processTable[i].intervall <= tick_counter )
@@ -135,13 +149,31 @@ void yield(void) {
 	 task_type * c_pcb = current_proc();
 	 task_type * n_pcb = next_proc();
 	 
-	 c_pcb->state = READY;
+	//change state
+	if (c_pcb-> intervall > 0) {
+		c_pcb->state = WAINTING;		
+		c_pcb->last_tick = tick_counter; // save last tick
+	} else {
+		c_pcb->state = READY;	
+
+	}
+
 	 n_pcb->state = RUNNING;
 	 
+	 current_pid = n_pcb->pid; //set the running pid
+
 	 //store the current stackpointer in switchContext 
-	 switchContext(&c_pcb->stackp, &n_pcb->stackp); 
+	 switchContext(&c_pcb->stackp, &n_pcb->stackp);  
 }
 
+
+void start(void) {
+	task_type * n_pcb = next_proc();
+	current_pid = n_pcb->pid;
+	firstContext(n_pcb->stackp);
+}
+
+//function to run multilbe RunToCompletion Tasks
 void schedule(void) {
 		for(int  i = 0; i < NPROCS; i++) {
 			if (processTable[i].pid > 0) { // only run valid tasks
