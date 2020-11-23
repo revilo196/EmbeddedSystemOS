@@ -6,9 +6,11 @@
 extern uint32_t tick_counter;
 
 typedef enum pstat_enum {
+	UNINITLIZED,
     READY,
     RUNNING,
     WAINTING,
+	TERMINATED,
 } pstat_type;
 
 /*

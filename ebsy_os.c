@@ -11,13 +11,22 @@ pid_t current_pid;
 
 uint32_t tick_counter = 0;
 
+uint32_t _os_exec_flag = 1;
 
 void HardFault_Handler(void)
 {
-    while (1)
-    {
-        //NOP
-    }
+	if(_os_exec_flag) {
+		while (1)
+		{
+			//OS ERROR
+		}
+	} else {
+		//proc error
+		task_type * c_pcb = current_proc();
+		c_pcb->state = TERMINATED;  // stop Faulty Proc
+
+		start(); // restart schedue
+	}
 } 
 
 /*
@@ -71,7 +80,7 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 			processTable[i].stackp[1] = (uintptr_t)argv;
 			processTable[i].stackp[2] = (uintptr_t)func;
 			
-		  processTable[i].stackp = processTable[i].stackp - 9;  //decremnet sp more
+		    processTable[i].stackp = processTable[i].stackp - 9;  //decremnet sp more
 			
 			processTable[i].state = READY;
 			return pid_counter;
@@ -123,7 +132,7 @@ task_type * next_proc() {
 
 
 void yield(void) {
-
+	_os_exec_flag = 1;
 	/*
 		wird von einem Proc aufgerufen der pausiert wird
 		
@@ -164,12 +173,15 @@ void yield(void) {
 
 	 //store the current stackpointer in switchContext 
 	 switchContext(&c_pcb->stackp, &n_pcb->stackp);  
+
+	 _os_exec_flag = 0;
 }
 
 
 void start(void) {
 	task_type * n_pcb = next_proc();
 	current_pid = n_pcb->pid;
+	_os_exec_flag = 0;
 	firstContext(n_pcb->stackp);
 }
 
