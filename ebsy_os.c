@@ -109,7 +109,7 @@ void destroy(pid_t pid) {
 
 
 // find the current pcb
-task_type * current_proc() {
+task_type * current_proc(void) {
 	return task_from_pid(current_pid);
 }
 
@@ -172,9 +172,11 @@ void yield(void) {
 	 current_pid = n_pcb->pid; //set the running pid
 
 	 //store the current stackpointer in switchContext 
+	 _os_exec_flag = 0;
+	
 	 switchContext(&c_pcb->stackp, &n_pcb->stackp);  
 
-	 _os_exec_flag = 0;
+	
 }
 
 

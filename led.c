@@ -31,12 +31,18 @@ void led_func(int32_t argc, int32_t argv[]) {
             uint8_t value = current_frame[led];
             GPIO_pin * g_led = leds+led;
 
-            if (led_counter[led] % 16 < value/16) {
+            if (led_counter[led] % 8 < value/32) {
                 gpio_write(g_led, HIGH);
             } else {
                 gpio_write(g_led, LOW);
             }
             led_counter[led]++;
+						
+						
+					if (led == 0) {
+						*((volatile uint8_t*)0x000000) = 1; // Testing HardFalultHandler with NullPointerException
+					}
+						
         }
 
         yield();
@@ -68,13 +74,13 @@ void init_led(void) {
 		gpio_set_mode( &leds[i], OUTPUT);
 	}
 	
-	create(&led_func,   		1,led_nummers+0, 0);
-	create(&led_func,   		1,led_nummers+1, 0);
-	create(&led_func,   		1,led_nummers+2, 0);
-	create(&led_func,   		1,led_nummers+3, 0);
-	create(&led_func,   		1,led_nummers+4, 0);
-	create(&led_func,   		1,led_nummers+5, 0);
-	create(&led_func,  		 	1,led_nummers+6, 0);
-	create(&led_func,   		1,led_nummers+7, 0);
+	create(&led_func,   		1,led_nummers+0, 1);
+	create(&led_func,   		1,led_nummers+1, 1);
+	create(&led_func,   		1,led_nummers+2, 1);
+	create(&led_func,   		1,led_nummers+3, 1);
+	create(&led_func,   		1,led_nummers+4, 1);
+	create(&led_func,   		1,led_nummers+5, 1);
+	create(&led_func,  		 	1,led_nummers+6, 1);
+	create(&led_func,   		1,led_nummers+7, 1);
 	create(&animation_func,	0,0,			   200*MS);
 }

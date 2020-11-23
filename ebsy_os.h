@@ -54,4 +54,6 @@ void start(void);
 void firstContext(uintptr_t * new_stack);
 
 
+task_type * current_proc(void);
+
 #endif // MACRO
