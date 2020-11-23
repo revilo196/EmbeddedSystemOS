@@ -3,7 +3,7 @@
 /*
 	Process Table and stack
 */
-#define NPROCS 9
+#define NPROCS 10
 #define STACK_SIZE 64
 task_type processTable[NPROCS]; 
 uint32_t stack[NPROCS][STACK_SIZE];
@@ -64,7 +64,7 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 			processTable[i].intervall = intervall;
 			processTable[i].argc = argc;
 			processTable[i].argv = argv;
-			processTable[i].stackp = &stack[i][255];
+			processTable[i].stackp = &stack[i][STACK_SIZE-1];
 			processTable[i].stackp = processTable[i].stackp - 3;  //decremnet stackpointer to fit Function and arguments
 			
 			processTable[i].stackp[0] = (uintptr_t)argc; //fill stack with initial values
