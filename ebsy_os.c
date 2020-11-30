@@ -102,7 +102,7 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
  * @param pid the pid of the process to remove
  */
 void destroy(pid_t pid) {
-		task_type *  pcb = task_from_pid(current_pid);
+		task_type *  pcb = task_from_pid(pid);
 		if (pcb != 0) {
 			pcb->pid = 0;
 			pcb->func = 0;

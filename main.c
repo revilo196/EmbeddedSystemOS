@@ -13,6 +13,12 @@ void tick_task_handler(int32_t argc, int32_t * arcv) {
 	{
 		delayms(1);
 		tick_counter++;
+		
+		if(tick_counter == 4000)  {
+			destroy(4);
+		}
+		
+		
 		yield();
 	}
 }
