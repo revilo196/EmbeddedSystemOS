@@ -7,11 +7,14 @@
 #define STACK_SIZE 64
 task_type processTable[NPROCS]; 
 uint32_t stack[NPROCS][STACK_SIZE];
-pid_t current_pid;
 
-uint32_t tick_counter = 0;
+pid_t current_pid; //aktuell laufender proc
+uint32_t tick_counter = 0; //globaler tick counter
 
-uint32_t _os_exec_flag = 1;
+// flag wird gesetzt um zwischen os code und task code zu untescheiden 
+// für fehler behandlung
+uint32_t _os_exec_flag = 1; 
+
 
 void HardFault_Handler(void)
 {
@@ -19,6 +22,7 @@ void HardFault_Handler(void)
 		while (1)
 		{
 			//OS ERROR
+			// kann nicht geklärt werden stop programm
 		}
 	} else {
 		//proc error
@@ -113,7 +117,7 @@ task_type * current_proc(void) {
 	return task_from_pid(current_pid);
 }
 
-
+// den nächsten prozess der ausgefürt werden soll bestimmen
 task_type * next_proc() {
 	
 	static uint32_t last_proc_table = 0;
@@ -130,19 +134,10 @@ task_type * next_proc() {
 	return 0;
 }
 
-
+// task wechseln 
 void yield(void) {
 	_os_exec_flag = 1;
-	/*
-		wird von einem Proc aufgerufen der pausiert wird
-		
-		update des proc-status 
-		und proc-tabelle
-		
-		n�chsten wartenden proc aufrufen
-		
-		switch context
-	*/
+
 	
 	//update waiting tasks from the tick counter
 	for(int  i = 0; i < NPROCS; i++) {
@@ -155,8 +150,8 @@ void yield(void) {
 		 }
 	 }
 	 
-	 task_type * c_pcb = current_proc();
-	 task_type * n_pcb = next_proc();
+	 task_type * c_pcb = current_proc(); // aktuellen task ermitteln
+	 task_type * n_pcb = next_proc(); // nächsten task bestimmen
 	 
 	//change state
 	if (c_pcb-> intervall > 0) {
@@ -179,7 +174,7 @@ void yield(void) {
 	
 }
 
-
+// den ersten Task starten und schedule starten
 void start(void) {
 	task_type * n_pcb = next_proc();
 	current_pid = n_pcb->pid;
@@ -187,20 +182,3 @@ void start(void) {
 	firstContext(n_pcb->stackp);
 }
 
-//function to run multilbe RunToCompletion Tasks
-void schedule(void) {
-		for(int  i = 0; i < NPROCS; i++) {
-			if (processTable[i].pid > 0) { // only run valid tasks
-
-				if ( processTable[i].intervall == 0) { // idle task
-					processTable[i].func(processTable[i].argc, processTable[i].argv); // run with arguments
-				}
-				else if (processTable[i].last_tick + processTable[i].intervall <= tick_counter )
-				{
-					processTable[i].func(processTable[i].argc, processTable[i].argv); // run with arguments
-					processTable[i].last_tick  = tick_counter;
-				}
-
-			}
-		}
-}
