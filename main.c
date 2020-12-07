@@ -20,7 +20,7 @@ void tick_task_handler(int32_t argc, int32_t * arcv) {
 uint32_t test_inc_func(uint32_t a ,uint32_t b) {
 	uint32_t x = a + b;
 	x = x - b;
-	x++;
+	x--;
 	return x;
 }
 

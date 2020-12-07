@@ -128,27 +128,27 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 			processTable[i].stackp = &stack[i][STACK_SIZE-1];
 			processTable[i].stackp = processTable[i].stackp - 16;  //decremnet stackpointer to fit Function and arguments
 			
-			processTable[i].stackp[0] = 0; // r4
-			processTable[i].stackp[1] = 0; // r5
-			processTable[i].stackp[2] = 0; // r6
-			processTable[i].stackp[3] = 0; // r7
-			processTable[i].stackp[4] = 0; // r8
-			processTable[i].stackp[5] = 0; // r9
-			processTable[i].stackp[6] = 0; // r10
-			processTable[i].stackp[7] = 0; // r11
+			processTable[i].stackp[0] = 1; // r4
+			processTable[i].stackp[1] = 2; // r5
+			processTable[i].stackp[2] = 3; // r6
+			processTable[i].stackp[3] = 4; // r7
+			processTable[i].stackp[4] = 5; // r8
+			processTable[i].stackp[5] = 6; // r9
+			processTable[i].stackp[6] = 7; // r10
+			processTable[i].stackp[7] = 8; // r11
 
 			processTable[i].stackp[8] = (uintptr_t)argc; //r0
 			processTable[i].stackp[9] = (uintptr_t)argv; //r1
 
-			processTable[i].stackp[10] = 0; // r2
-			processTable[i].stackp[11] = 0; // r3
-			processTable[i].stackp[12] = 0; // r12
+			processTable[i].stackp[10] = 9; // r2
+			processTable[i].stackp[11] = 10; // r3
+			processTable[i].stackp[12] = 11; // r12
 
 			processTable[i].stackp[13] = (uintptr_t)&stop; // LR 
 			processTable[i].stackp[14] = (uintptr_t)func; // PC
 			processTable[i].stackp[15] = 0; // xPSR
 			
-		    processTable[i].stackp = processTable[i].stackp - 1;  //decremnet sp more
+		  //  processTable[i].stackp = processTable[i].stackp - 1;  //decremnet sp more
 			
 			processTable[i].state = READY;
 			return pid_counter;
