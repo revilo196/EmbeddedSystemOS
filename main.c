@@ -11,27 +11,44 @@
 void tick_task_handler(int32_t argc, int32_t * arcv) {
 	while (1)
 	{
-		delayms(1);
-		tick_counter++;
-		
-		if(tick_counter == 4000)  {
+		if(sys_tick_counter == 4000)  {
 			destroy(4);
 		}
-		
-		
-		yield();
 	}
 }
 
+uint32_t test_inc_func(uint32_t a ,uint32_t b) {
+	uint32_t x = a + b;
+	x = x - b;
+	x++;
+	return x;
+}
+
+uint32_t test_var = 0;
+void test_01_func(int32_t argc, int32_t * arcv) {
+	while (1)
+	{
+		test_var += test_var/2 + 1;
+	}
+} 
+
+void test_02_func(int32_t argc, int32_t * arcv){
+	while (1)
+	{
+		test_var = test_inc_func(test_var, 42);
+	}
+}
 
 int main(void)
 {	
-	init_proc_table();
+	init_os();
 	
 	// this runs P2(leds) with scheduler from P3
-	init_led();
+	// init_led();
 	// tick task handler
-	create(&tick_task_handler, 0, 0, 0);
+	create(&test_01_func, 1, (int32_t*)2, 0);
+	create(&test_02_func, 1, (int32_t*)2, 0);
+
 
 	start(); //starts schedule with firstContext
 

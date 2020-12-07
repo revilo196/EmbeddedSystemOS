@@ -65,7 +65,7 @@ void led_func(int32_t argc, int32_t argv[]) {
 					  // }
         }
 
-        yield();
+      //  yield();
     }
 }
 
@@ -80,7 +80,7 @@ void animation_func(int32_t argc, int32_t argv[]) {
 			current_frame = animation_array[0];
 		}
 
-        yield();
+       // yield();
     }
 }
 

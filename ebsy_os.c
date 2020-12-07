@@ -4,17 +4,26 @@
 	Process Table and stack
 */
 #define NPROCS 10
-#define STACK_SIZE 64
+#define STACK_SIZE 128
 task_type processTable[NPROCS]; 
 uint32_t stack[NPROCS][STACK_SIZE];
 
+
+task_type * current_task;
+task_type * next_task;
 pid_t current_pid; //aktuell laufender proc
-uint32_t tick_counter = 0; //globaler tick counter
+uint32_t sys_tick_counter = 0; //globaler tick counter
 
 // flag wird gesetzt um zwischen os code und task code zu untescheiden 
 // für fehler behandlung
 uint32_t _os_exec_flag = 1; 
 
+#define STCTRL_BASE           0xE000E010
+#define STCTRL ((uint32_t volatile*) STCTRL_BASE)
+#define STRELOAD_BASE 0xE000E014
+#define STRELOAD ((uint32_t volatile*) STRELOAD_BASE)
+#define ICSR_BASE 0xE000ED04
+#define ICSR ((uint32_t volatile*) ICSR_BASE)
 
 void HardFault_Handler(void)
 {
@@ -33,15 +42,53 @@ void HardFault_Handler(void)
 	}
 } 
 
+
+void SysTick_Handler(void) {
+	// update waiting tasks from the tick counter
+	for(int  i = 0; i < NPROCS; i++) {
+			// check all waiting proc for changes
+			if(processTable[i].pid  > 0 && processTable[i].state == WAINTING) {
+				if (processTable[i].last_tick + processTable[i].intervall <= sys_tick_counter )
+				{
+					processTable[i].state = READY;
+				}
+			}
+		}
+	
+
+	sys_tick_counter++;
+
+	current_task = current_proc(); // aktuellen task ermitteln
+	next_task = next_proc();       // nächsten task bestimmen
+
+		//change state
+	if (current_task-> intervall > 0) {
+		current_task->state = WAINTING;		
+		current_task->last_tick = sys_tick_counter; // save last tick
+	} else {
+		current_task->state = READY;	
+
+	}
+
+	 next_task->state = RUNNING;   // 
+	 current_pid = next_task->pid; // set the running pid
+
+	(*ICSR) = 0x10000000; // PendSVtriggern
+}
+
+
 /*
 	clear Process Table
 	pid 0 is reserved to represent emtpy space in the processTable
 */
-void init_proc_table(void) {
+void init_os(void) {
 	for(int  i = 0; i < NPROCS; i++) {
 		processTable[i].pid = 0;
 		processTable[i].func = 0;
 	}
+
+	(*STRELOAD) = 47999999;
+	(*STCTRL) |= 0x07;
 }
 
 // lookup task by its pid 
@@ -75,16 +122,33 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 			processTable[i].pid = pid_counter;
 			processTable[i].func = func;
 			processTable[i].intervall = intervall;
+			processTable[i].last_tick = sys_tick_counter;
 			processTable[i].argc = argc;
 			processTable[i].argv = argv;
 			processTable[i].stackp = &stack[i][STACK_SIZE-1];
-			processTable[i].stackp = processTable[i].stackp - 3;  //decremnet stackpointer to fit Function and arguments
+			processTable[i].stackp = processTable[i].stackp - 16;  //decremnet stackpointer to fit Function and arguments
 			
-			processTable[i].stackp[0] = (uintptr_t)argc; //fill stack with initial values
-			processTable[i].stackp[1] = (uintptr_t)argv;
-			processTable[i].stackp[2] = (uintptr_t)func;
+			processTable[i].stackp[0] = 0; // r4
+			processTable[i].stackp[1] = 0; // r5
+			processTable[i].stackp[2] = 0; // r6
+			processTable[i].stackp[3] = 0; // r7
+			processTable[i].stackp[4] = 0; // r8
+			processTable[i].stackp[5] = 0; // r9
+			processTable[i].stackp[6] = 0; // r10
+			processTable[i].stackp[7] = 0; // r11
+
+			processTable[i].stackp[8] = (uintptr_t)argc; //r0
+			processTable[i].stackp[9] = (uintptr_t)argv; //r1
+
+			processTable[i].stackp[10] = 0; // r2
+			processTable[i].stackp[11] = 0; // r3
+			processTable[i].stackp[12] = 0; // r12
+
+			processTable[i].stackp[13] = (uintptr_t)&stop; // LR 
+			processTable[i].stackp[14] = (uintptr_t)func; // PC
+			processTable[i].stackp[15] = 0; // xPSR
 			
-		    processTable[i].stackp = processTable[i].stackp - 9;  //decremnet sp more
+		    processTable[i].stackp = processTable[i].stackp - 1;  //decremnet sp more
 			
 			processTable[i].state = READY;
 			return pid_counter;
@@ -110,6 +174,18 @@ void destroy(pid_t pid) {
 		return;
 }
 
+/**
+ * @brief fuction to stop a task
+ * 
+ */
+void stop() {
+	task_type *  pcb = current_proc();
+	if (pcb != 0) {
+			pcb->pid = 0;
+			pcb->func = 0;
+	}
+	while (1){/* wait for next systick to close this task */}
+}
 
 
 // find the current pcb
@@ -134,8 +210,20 @@ task_type * next_proc() {
 	return 0;
 }
 
+
+
+// den ersten Task starten und schedule starten
+void start(void) {
+	task_type * n_pcb = next_proc();
+	current_pid = n_pcb->pid;
+	_os_exec_flag = 0;
+	firstContext(n_pcb->stackp);
+}
+
+
+
 // task wechseln 
-void yield(void) {
+/*void yield(void) {
 	_os_exec_flag = 1;
 
 	
@@ -172,13 +260,29 @@ void yield(void) {
 	 switchContext(&c_pcb->stackp, &n_pcb->stackp);  
 
 	
-}
+}*/
 
-// den ersten Task starten und schedule starten
-void start(void) {
-	task_type * n_pcb = next_proc();
-	current_pid = n_pcb->pid;
-	_os_exec_flag = 0;
-	firstContext(n_pcb->stackp);
-}
+/**
+switchContext FUNCTION  ; start of function 
 
+    EXPORT switchContext 
+	;alten Kontext Sichern
+	PUSH { r1,r0,lr }
+	PUSH { r4-r7 }
+	PUSH { r8-r12 }  
+	
+	; ALTEN STACKPOINTER im PCB SPEICHERN
+	STR SP, [R0,#0x00] ;r0 addresse zu altem stackpointer
+	
+	LDR SP, [R1,#0x00]  ;swap stackpointer R1(ADRESSE ZU NEUEN STACKPOINTER im PCB)
+
+   	; hole den neuen Kontext
+	; vomneuen Stack 
+	pop { r8-r12 }      
+	pop { r4-r7 }
+	pop { r1,r0,lr }  ;!! R1 und R0 halten argumente zum start eines neuen Task's
+	
+    BX  LR
+
+	ENDFUNC  ; end of function
+**/

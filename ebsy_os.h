@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-extern uint32_t tick_counter;
+extern uint32_t sys_tick_counter;
 
 typedef enum pstat_enum {
 	UNINITLIZED,
@@ -19,18 +19,18 @@ typedef enum pstat_enum {
 typedef uint32_t pid_t; 
 typedef struct pcb_s
 {
+	uintptr_t * stackp;
 	pid_t pid;
 	int32_t argc;
 	int32_t *argv;
 	uint32_t last_tick;
 	uint16_t intervall;
 	void (*func)(int32_t argc, int32_t argv[]);
-	uintptr_t * stackp;
 	pstat_type state; 
 } task_type;
 
 
-void init_proc_table(void);
+void init_os(void);
 
 
 pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t argv[], uint16_t intervall);
@@ -38,6 +38,7 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 
 void destroy(pid_t pid);
 
+void stop(void);
 
 void yield(void);
 
@@ -55,5 +56,6 @@ void firstContext(uintptr_t * new_stack);
 
 
 task_type * current_proc(void);
+task_type * next_proc(void);
 
 #endif // MACRO

@@ -31,40 +31,44 @@
 
   THUMB
 
+  EXTERN current_task
+  EXTERN next_task
 
-switchContext FUNCTION  ; start of function 
+PendSV_Handler PROC
+	LDR   R3, =current_task
+	MRS   R0, PSP
+	ADD   R0, #4 ; address um 4 nach oben, da der P-SP auf die erste freie adresse zeigt
+	STMDB R0, {R4-R11}
+	STR   R0, [R3]  ; den gepuscheten P-SP wieder speichen
 
-    EXPORT switchContext 
-	;alten Kontext Sichern
-	PUSH { r1,r0,lr }
-	PUSH { r4-r7 }
-	PUSH { r8-r12 }  
-	
-	; ALTEN STACKPOINTER im PCB SPEICHERN
-	STR SP, [R0,#0x00] ;r0 addresse zu altem stackpointer
-	
-	LDR SP, [R1,#0x00]  ;swap stackpointer R1(ADRESSE ZU NEUEN STACKPOINTER im PCB)
+	LDR   R3, =next_task
+	LDR   R0, [R3];   ;r0 sollte jetzt die adresse des neue stacks beinahalten
+	LDMIA R0, {R4-R11}
+	SUB   R0, #4 ; wieder auf auf freien speicher zeigen
+	MRS   PSP, R0
 
-   	; hole den neuen Kontext
-	; vomneuen Stack 
-	pop { r8-r12 }      
-	pop { r4-r7 }
-	pop { r1,r0,lr }  ;!! R1 und R0 halten argumente zum start eines neuen Task's
-	
-    BX  LR
+	LDR R0, =0xFFFFFFFD  ; mit dem NVIC in PSP mode springen
+	BX R0
 
-	ENDFUNC  ; end of function
+	ENDP
 
-	
+
 firstContext FUNCTION 
 	EXPORT firstContext
-		
-	mov sp, r0
+	SUB R0, #4;  wieder auf auf freien speicher zeigen
+	MRS PSP, r0
+	
+	LDR R0, =0x03
+	MRC R0
+
 	; hole den neuen Kontext
 	; vom neuen Stack 
-	pop { r8-r12 }      
-	pop { r4-r7 }
-	pop { r1,r0,pc } ;!! R1 und R0 halten argumente zum start eines neuen Task's
+	pop { r4-r11 }      
+	pop { r0-r3 }
+	pop { r12,r2,r3,xPSR };
+	
+	MOV LR,  r2
+	BX R3
 	
 	ENDFUNC  ; end of function
 	
