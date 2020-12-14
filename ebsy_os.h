@@ -47,6 +47,7 @@ void start(void);
 
 void firstContext(uintptr_t * new_stack);
 
+void wait();
 
 task_type * current_proc(void);
 task_type * next_proc(void);

@@ -6,6 +6,8 @@
 #define NPROCS 10
 #define STACK_SIZE 128
 task_type processTable[NPROCS]; 
+task_type * ready_list[NPROCS];
+
 uint32_t stack[NPROCS][STACK_SIZE];
 
 
@@ -17,6 +19,7 @@ uint32_t sys_tick_counter = 0; //globaler tick counter
 // flag wird gesetzt um zwischen os code und task code zu untescheiden 
 // für fehler behandlung
 uint32_t _os_exec_flag = 1; 
+uint32_t _os_wait_flag = 0; 
 
 #define STCTRL_BASE           0xE000E010
 #define STCTRL ((uint32_t volatile*) STCTRL_BASE)
@@ -24,6 +27,35 @@ uint32_t _os_exec_flag = 1;
 #define STRELOAD ((uint32_t volatile*) STRELOAD_BASE)
 #define ICSR_BASE 0xE000ED04
 #define ICSR ((uint32_t volatile*) ICSR_BASE)
+
+task_type ** next_ready_proc = ready_list;
+task_type ** last_waiting_proc = ready_list;
+
+task_type * pop_task(void){
+	
+	if (last_waiting_proc == next_ready_proc)  {
+		return 0;
+	}
+	
+	task_type * p = (*next_ready_proc);
+	next_ready_proc++;
+	
+	 if (next_ready_proc >= next_ready_proc + NPROCS) {
+		 task_type ** next_ready_proc = ready_list;
+	 }
+	 
+	 return p;
+}
+
+ void push_task(task_type * task) {
+	(*last_waiting_proc) = task;
+	 last_waiting_proc++;
+	 if (last_waiting_proc >= last_waiting_proc + NPROCS) {
+		 task_type ** last_waiting_proc = ready_list;
+	 }
+}
+
+
 
 void HardFault_Handler(void)
 {
@@ -52,6 +84,7 @@ void SysTick_Handler(void) {
 				if (processTable[i].last_tick + processTable[i].intervall <= sys_tick_counter )
 				{
 					processTable[i].state = READY;
+					push_task(&processTable[i]);
 				}
 			}
 		}
@@ -60,9 +93,9 @@ void SysTick_Handler(void) {
 	sys_tick_counter++;
 
 	current_task = current_proc(); // aktuellen task ermitteln
-	next_task = next_proc();       // nächsten task bestimmen
+	next_task = pop_task();       // nächsten task bestimmen
 
-	if(current_task != next_task) {
+	if(current_task != next_task && next_task != 0) {
 
 		if (current_task->state == RUNNING) {		
 
@@ -71,9 +104,12 @@ void SysTick_Handler(void) {
 				current_task->state = WAINTING;		
 				current_task->last_tick = sys_tick_counter; // save last tick
 			} else {
-				current_task->state = READY;	
+				current_task->state = READY;
+				push_task(current_task);
+				
 
 			}
+			
 		
 		} else if (current_task->state == TERMINATED) {
 
@@ -170,6 +206,7 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 		  //  processTable[i].stackp = processTable[i].stackp - 1;  //decremnet sp more
 			
 			processTable[i].state = READY;
+			push_task(&processTable[i]);
 			return pid_counter;
 		}
 	}
@@ -205,6 +242,12 @@ void stop() {
 	while (1){/* wait for next systick to close this task */}
 }
 
+void wait(){
+	task_type *  pcb = current_proc();
+	_os_wait_flag = 1;
+		(*ICSR) = 0x04000000; // SysTick mit wait flag triggern
+	while(_os_wait_flag);
+}
 
 // find the current pcb
 task_type * current_proc(void) {
@@ -232,8 +275,9 @@ task_type * next_proc() {
 
 // den ersten Task starten und schedule starten
 void start(void) {
-	task_type * n_pcb = next_proc();
+	task_type * n_pcb = pop_task();
 	current_pid = n_pcb->pid;
+	n_pcb->state = RUNNING;
 	_os_exec_flag = 0;
 	firstContext(n_pcb->stackp);
 }

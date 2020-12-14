@@ -1,6 +1,7 @@
 #include "led.h"
 #include "gpio.h"
 #include "ebsy_os.h"
+#include "delay.h"
 
 #define NUM_LEDS 8
 #define PORT_LEDS 0
@@ -21,7 +22,7 @@ uint8_t animation_array0[6][NUM_LEDS] =
 /** LED ANIMATION DISCRIBED AS ARRAY */
 #define FRAMES 14											
 uint8_t animation_array[FRAMES][NUM_LEDS] = 
-											{{255,128, 64, 32,    0, 0,  0,  0},
+											{{255,128, 64, 32,    0, 0,  0,  255},
 											{128,255,128, 64,     32, 0,  0,  0},
 											{ 64,128,255,128,    64, 32,  0,  0},
 											{  32, 64,128,255,   128, 64, 32,  0},
@@ -59,13 +60,8 @@ void led_func(int32_t argc, int32_t argv[]) {
             }
             led_counter[led]++;
 						
-						// Testing HardFalultHandler with NullPointerException
-				    // if (led == 0) {
-						// *((volatile uint8_t*)0x000000) = 1; 
-					  // }
         }
 
-      //  yield();
     }
 }
 
@@ -75,12 +71,11 @@ void led_func(int32_t argc, int32_t argv[]) {
 void animation_func(int32_t argc, int32_t argv[]) {
 	while (1)
     {
-		current_frame = current_frame + NUM_LEDS;
-		if (current_frame > animation_array[FRAMES-1]) {
-			current_frame = animation_array[0];
-		}
-
-       // yield();
+			current_frame = current_frame + NUM_LEDS;
+			if (current_frame > animation_array[FRAMES-1]) {
+				current_frame = animation_array[0];
+			}
+			wait();
     }
 }
 
@@ -99,13 +94,13 @@ void init_led(void) {
 		gpio_set_mode( &leds[i], OUTPUT);
 	}
 	
-	create(&led_func,   		1,led_nummers+0, 1);
-	create(&led_func,   		1,led_nummers+1, 1);
-	create(&led_func,   		1,led_nummers+2, 1);
-	create(&led_func,   		1,led_nummers+3, 1);
-	create(&led_func,   		1,led_nummers+4, 1);
-	create(&led_func,   		1,led_nummers+5, 1);
-	create(&led_func,  		 	1,led_nummers+6, 1);
-	create(&led_func,   		1,led_nummers+7, 1);
+	create(&led_func,   		1,led_nummers+0, 0);
+	create(&led_func,   		1,led_nummers+1, 0);
+	create(&led_func,   		1,led_nummers+2, 0);
+	create(&led_func,   		1,led_nummers+3, 0);
+	create(&led_func,   		1,led_nummers+4, 0);
+	create(&led_func,   		1,led_nummers+5, 0);
+	create(&led_func,  		 	1,led_nummers+6, 0);
+	create(&led_func,   		1,led_nummers+7, 0);
 	create(&animation_func,	0,0,			   150*MS);
 }

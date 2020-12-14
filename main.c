@@ -38,12 +38,12 @@ uint32_t test_var = 0;
 void test_01_func(int32_t argc, int32_t * arcv) {
 	while (1)
 	{
-		test_var -= argc*8;
+		test_var += argc*8;
 	}
 } 
 
 void test_02_func(int32_t argc, int32_t * arcv){
-	while (test_var < 0x000FFF00 )
+	while (test_var < 0x00FFFFFF )
 	{
 		test_var = test_inc_func(test_var, 42);
 	}
@@ -54,9 +54,9 @@ int main(void)
 	init_os();
 	
 	// this runs P2(leds) with scheduler from P3
-	// init_led();
+	init_led();
 	// tick task handler
-	create(&test_01_func, 1, (int32_t*)2, 0);
+	//create(&test_01_func, 1, (int32_t*)2, 0);
 	create(&test_02_func, 1, (int32_t*)2, 0);
 
 
