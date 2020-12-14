@@ -44,6 +44,7 @@ void HardFault_Handler(void)
 
 
 void SysTick_Handler(void) {
+	_os_exec_flag = 1;
 	// update waiting tasks from the tick counter
 	for(int  i = 0; i < NPROCS; i++) {
 			// check all waiting proc for changes
@@ -61,19 +62,35 @@ void SysTick_Handler(void) {
 	current_task = current_proc(); // aktuellen task ermitteln
 	next_task = next_proc();       // nächsten task bestimmen
 
-		//change state
-	if (current_task-> intervall > 0) {
-		current_task->state = WAINTING;		
-		current_task->last_tick = sys_tick_counter; // save last tick
-	} else {
-		current_task->state = READY;	
+	if(current_task != next_task) {
+
+		if (current_task->state == RUNNING) {		
+
+				//change state
+			if (current_task-> intervall > 0) {
+				current_task->state = WAINTING;		
+				current_task->last_tick = sys_tick_counter; // save last tick
+			} else {
+				current_task->state = READY;	
+
+			}
+		
+		} else if (current_task->state == TERMINATED) {
+
+			current_task->pid = 0; //free the current task
+			current_task->func = 0;
+			
+		} else if (current_task->state == WAINTING_ON) {
+			// set waiting on resource
+		}
+
+		next_task->state = RUNNING;   // 
+		current_pid = next_task->pid; // set the running pid
+
+		(*ICSR) = 0x10000000; // PendSVtriggern
 
 	}
-
-	 next_task->state = RUNNING;   // 
-	 current_pid = next_task->pid; // set the running pid
-
-	(*ICSR) = 0x10000000; // PendSVtriggern
+	_os_exec_flag = 0;
 }
 
 
@@ -82,6 +99,8 @@ void SysTick_Handler(void) {
 	pid 0 is reserved to represent emtpy space in the processTable
 */
 void init_os(void) {
+	_os_exec_flag = 1;
+
 	for(int  i = 0; i < NPROCS; i++) {
 		processTable[i].pid = 0;
 		processTable[i].func = 0;
@@ -146,7 +165,7 @@ pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t 
 
 			processTable[i].stackp[13] = (uintptr_t)&stop; // LR 
 			processTable[i].stackp[14] = (uintptr_t)func; // PC
-			processTable[i].stackp[15] = 0; // xPSR
+			processTable[i].stackp[15] = 0x41000000; // xPSR
 			
 		  //  processTable[i].stackp = processTable[i].stackp - 1;  //decremnet sp more
 			
@@ -181,8 +200,7 @@ void destroy(pid_t pid) {
 void stop() {
 	task_type *  pcb = current_proc();
 	if (pcb != 0) {
-			pcb->pid = 0;
-			pcb->func = 0;
+			pcb->state = TERMINATED;
 	}
 	while (1){/* wait for next systick to close this task */}
 }
@@ -201,7 +219,7 @@ task_type * next_proc() {
 	for(uint32_t  i = 0; i < NPROCS; i++) {
 		uint32_t proc_index = (last_proc_table + i + 1) % NPROCS;
 		
-		if(processTable[proc_index].pid  > 0 && processTable[proc_index].state == READY) { 
+		if(processTable[proc_index].pid  > 0 && (processTable[proc_index].state == READY || processTable[proc_index].state == RUNNING)) { 
 			last_proc_table++;
 			return & processTable[proc_index];
 		}

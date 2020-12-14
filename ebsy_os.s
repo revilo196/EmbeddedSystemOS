@@ -33,9 +33,14 @@
 
   EXTERN current_task
   EXTERN next_task
+  EXTERN _os_exec_flag
 
 PendSV_Handler PROC
 	EXPORT PendSV_Handler
+	LDR R3, =_os_exec_flag
+	MOV R0, #1
+	STR R0, [R3]
+
 	LDR   R3, =current_task
 	MRS   R0, PSP
 	;ADD   R0, #4 ; address um 4 nach oben, da der P-SP auf die erste freie adresse zeigt
@@ -53,7 +58,17 @@ PendSV_Handler PROC
 	;SUB   R0, #4 ; wieder auf auf freien speicher zeigen
 	MSR   PSP, R0
 
+	LDR   R3, =current_task ;SWAP current_task and  next_task pointer and set next_task to NULL
+	LDR   R4, =next_task
+	LDR   R1, [R4]
+	STR   R1, [R3]
+	MOV   R1, #0
+	STR   R1, [R4]
 	
+	LDR R3, =_os_exec_flag
+	MOV R0, #0
+	STR R0, [R3]
+
 	LDR R0, =0xFFFFFFFD  ; mit dem NVIC in PSP mode springen
 	BX R0
 	

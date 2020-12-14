@@ -17,23 +17,33 @@ void tick_task_handler(int32_t argc, int32_t * arcv) {
 	}
 }
 
+void rec_test(uint32_t * a, uint32_t b) {
+	if(--b > 0) {
+		(*a)++;
+		rec_test(a,b);
+	}
+}
+
+
 uint32_t test_inc_func(uint32_t a ,uint32_t b) {
 	uint32_t x = a + b;
 	x = x - b;
-	x--;
+	rec_test(&x, 16);
 	return x;
 }
 
+
 uint32_t test_var = 0;
+
 void test_01_func(int32_t argc, int32_t * arcv) {
 	while (1)
 	{
-		test_var += test_var/2 + 1;
+		test_var -= argc*8;
 	}
 } 
 
 void test_02_func(int32_t argc, int32_t * arcv){
-	while (1)
+	while (test_var < 0x000FFF00 )
 	{
 		test_var = test_inc_func(test_var, 42);
 	}

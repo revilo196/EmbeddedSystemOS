@@ -10,13 +10,14 @@ typedef enum pstat_enum {
     READY,
     RUNNING,
     WAINTING,
+	  WAINTING_ON,
 	TERMINATED,
 } pstat_type;
 
 /*
  Task Structure
 */
-typedef uint32_t pid_t; 
+typedef int32_t pid_t; 
 typedef struct pcb_s
 {
 	uintptr_t * stackp;
@@ -32,25 +33,17 @@ typedef struct pcb_s
 
 void init_os(void);
 
-
 pid_t create(void (*func)(int32_t argc, int32_t argv[]) , int32_t argc, int32_t argv[], uint16_t intervall);
 
+pid_t fork();
 
 void destroy(pid_t pid);
 
 void stop(void);
 
-void yield(void);
-
-
-void schedule(void);
-
-
 void switchContext(uintptr_t ** old_stack, uintptr_t ** new_stack);
 
-
 void start(void);
-
 
 void firstContext(uintptr_t * new_stack);
 
