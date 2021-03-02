@@ -1,1 +1,1 @@
-# ebsy_project
+# EmbeddedSystemOS
